@@ -33,6 +33,7 @@ class HttpApi(HttpApiBase):
         headers = headers if headers else BASE_HEADERS
 
         if params:
+            import q; q.q(params)
             params_with_val = {}
             for param in params:
                 if params[param] is not None:
@@ -40,11 +41,17 @@ class HttpApi(HttpApiBase):
             url = "{0}?{1}".format(url, urlencode(params_with_val))
 
         try:
+            import q; q.q(url)
+            import q; q.q(data)
+            import q; q.q(request_method)
+            import q; q.q(headers)
+
             self._display_request(request_method)
             response, response_data = self.connection.send(
                 url, data, method=request_method, headers=headers
             )
-            value = self._get_response_value(response_data)
+            #value = self._get_response_value(response_data)
+            import q; q.q(response_data.getvalue())
 
             return response.getcode(), self._response_to_json(value)
         except HTTPError as e:

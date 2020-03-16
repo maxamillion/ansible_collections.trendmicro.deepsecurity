@@ -49,25 +49,27 @@ class DeepSecurityRequest(object):
         self.not_rest_data_keys.append("validate_certs")
         self.headers = headers
 
-    def _httpapi_error_handle(self, method, uri, data=None):
-        # FIXME - make use of handle_httperror(self, exception) where applicable
-        #   https://docs.ansible.com/ansible/latest/network/dev_guide/developing_plugins_network.html#developing-plugins-httpapi
-
-        try:
-            code, response = self.connection.send_request(
-                method, uri, data=data, headers=self.headers
-            )
-        except ConnectionError as e:
-            self.module.fail_json(msg="connection error occurred: {0}".format(e))
-        except CertificateError as e:
-            self.module.fail_json(msg="certificate error occurred: {0}".format(e))
-        except ValueError as e:
-            self.module.fail_json(msg="certificate not found: {0}".format(e))
-
-        return response
+#    def _httpapi_error_handle(self, method, uri, data=None):
+#        # FIXME - make use of handle_httperror(self, exception) where applicable
+#        #   https://docs.ansible.com/ansible/latest/network/dev_guide/developing_plugins_network.html#developing-plugins-httpapi
+#
+#        try:
+#            code, response = self.connection.send_request(
+#                method, uri, data=data, headers=self.headers
+#            )
+#        except ConnectionError as e:
+#            self.module.fail_json(msg="connection error occurred: {0}".format(e))
+#        except CertificateError as e:
+#            self.module.fail_json(msg="certificate error occurred: {0}".format(e))
+#        except ValueError as e:
+#            self.module.fail_json(msg="certificate not found: {0}".format(e))
+#
+#        return response
 
     def get(self, url, **kwargs):
-        return self._httpapi_error_handle("GET", url, **kwargs)
+        code, response = self.connection.send_request('GET', url, **kwargs)
+        return response
+        #return self._httpapi_error_handle("GET", url, **kwargs)
 
     def put(self, url, **kwargs):
         return self._httpapi_error_handle("PUT", url, **kwargs)
