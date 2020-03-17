@@ -85,7 +85,7 @@ class HttpApi(HttpApiBase):
             }
         }
 
-        response = self.send_request(data, login_path)
+        response = self.send_request('POST', data, login_path)
         import q; q.q(response)
         try:
             # This is still sent as an HTTP header, so we can set our connection's _auth
