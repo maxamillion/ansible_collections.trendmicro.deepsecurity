@@ -49,6 +49,9 @@ class DeepSecurityRequest(object):
         self.not_rest_data_keys.append("validate_certs")
         self.headers = headers
 
+
+    import q;
+    @q.t
     def _httpapi_error_handle(self, method, uri, data=None):
         # FIXME - make use of handle_httperror(self, exception) where applicable
         #   https://docs.ansible.com/ansible/latest/network/dev_guide/developing_plugins_network.html#developing-plugins-httpapi

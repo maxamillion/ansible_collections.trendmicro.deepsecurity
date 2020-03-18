@@ -29,11 +29,12 @@ BASE_HEADERS = {"Content-Type": "application/json"}
 
 
 class HttpApi(HttpApiBase):
+    import q;
+    @q.t
     def send_request(self, request_method, url, params=None, data=None, headers=None):
         headers = headers if headers else BASE_HEADERS
 
         if params:
-            import q; q.q(params)
             params_with_val = {}
             for param in params:
                 if params[param] is not None:
@@ -41,17 +42,11 @@ class HttpApi(HttpApiBase):
             url = "{0}?{1}".format(url, urlencode(params_with_val))
 
         try:
-            import q; q.q(url)
-            import q; q.q(data)
-            import q; q.q(request_method)
-            import q; q.q(headers)
-
             self._display_request(request_method)
             response, response_data = self.connection.send(
                 url, data, method=request_method, headers=headers
             )
-            #value = self._get_response_value(response_data)
-            import q; q.q(response_data.getvalue())
+            value = self._get_response_value(response_data)
 
             return response.getcode(), self._response_to_json(value)
         except HTTPError as e:
@@ -73,6 +68,8 @@ class HttpApi(HttpApiBase):
         except ValueError:
             raise ConnectionError("Invalid JSON response: %s" % response_text)
 
+    import q;
+    @q.t
     def login(self, username, password):
         login_path = '/rest/authentication/login/primary'
         data = {
@@ -85,7 +82,7 @@ class HttpApi(HttpApiBase):
             }
         }
 
-        response = self.send_request('POST', data, login_path)
+        response = self.send_request('POST', login_path, data=data)
         import q; q.q(response)
         try:
             # This is still sent as an HTTP header, so we can set our connection's _auth
