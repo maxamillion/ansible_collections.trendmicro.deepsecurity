@@ -59,13 +59,11 @@ def main():
 
     module = AnsibleModule(argument_spec=argspec, supports_check_mode=True)
 
-    deepsec_request = DeepSecurityRequest(
-        module, headers={"Content-Type": "application/json"}
-    )
+    deepsec_request = DeepSecurityRequest(module)
 
     hosts = deepsec_request.get('/rest/hosts')
 
-    module.exit_json(hosts=hosts, changed=False)
+    module.exit_json(hosts=hosts['hosts'], changed=False)
 
 
 if __name__ == "__main__":

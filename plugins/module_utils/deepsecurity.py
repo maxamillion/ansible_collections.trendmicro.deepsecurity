@@ -15,6 +15,10 @@ from ansible.module_utils._text import to_text
 
 import json
 
+BASE_HEADERS = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+}
 
 def find_dict_in_list(some_list, key, value):
     text_type = False
@@ -35,6 +39,8 @@ def find_dict_in_list(some_list, key, value):
 
 
 class DeepSecurityRequest(object):
+    import q;
+    @q.t
     def __init__(self, module, headers=None, not_rest_data_keys=None):
 
         self.module = module
@@ -47,38 +53,31 @@ class DeepSecurityRequest(object):
         else:
             self.not_rest_data_keys = []
         self.not_rest_data_keys.append("validate_certs")
-        self.headers = headers
+        self.headers = headers if headers else BASE_HEADERS
 
 
+    import q;
+    @q.t
     def _httpapi_error_handle(self, method, uri, data={}):
         # FIXME - make use of handle_httperror(self, exception) where applicable
         #   https://docs.ansible.com/ansible/latest/network/dev_guide/developing_plugins_network.html#developing-plugins-httpapi
 
-#        try:
-#            code, response = self.connection.send_request(
-#                method, uri, data=data, headers=self.headers
-#            )
-#        except ConnectionError as e:
-#            self.module.fail_json(msg="connection error occurred: {0}".format(e))
-#        except CertificateError as e:
-#            self.module.fail_json(msg="certificate error occurred: {0}".format(e))
-#        except ValueError as e:
-#            self.module.fail_json(msg="certificate not found: {0}".format(e))
-
-        code, response = self.connection.send_request(
-            method, uri, data=data, headers=self.headers
-        )
+        try:
+            import q; q.q(self.headers)
+            code, response = self.connection.send_request(
+                method, uri, data=data, headers=self.headers
+            )
+        except ConnectionError as e:
+            self.module.fail_json(msg="connection error occurred: {0}".format(e))
+        except CertificateError as e:
+            self.module.fail_json(msg="certificate error occurred: {0}".format(e))
+        except ValueError as e:
+            self.module.fail_json(msg="certificate not found: {0}".format(e))
 
         return response
 
-    def get(self, url):
-
-        #return self._httpapi_error_handle("GET", url, **kwargs)
-        code, response = self.connection.send_request(
-            'GET', url, data={}, headers=self.headers
-        )
-
-        return response
+    def get(self, url, **kwargs):
+        return self._httpapi_error_handle("GET", url, **kwargs)
 
     def put(self, url, **kwargs):
         return self._httpapi_error_handle("PUT", url, **kwargs)
