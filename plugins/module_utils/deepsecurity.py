@@ -41,7 +41,7 @@ class DeepSecurityRequest(object):
         self.connection = Connection(self.module._socket_path)
 
         # This allows us to exclude specific argspec keys from being included by
-        # the rest data that don't follow the qradar_* naming convention
+        # the rest data that don't follow the deepsecurity_* naming convention
         if not_rest_data_keys:
             self.not_rest_data_keys = not_rest_data_keys
         else:
@@ -50,9 +50,7 @@ class DeepSecurityRequest(object):
         self.headers = headers
 
 
-    import q;
-    @q.t
-    def _httpapi_error_handle(self, method, uri, data=None):
+    def _httpapi_error_handle(self, method, uri, data={}):
         # FIXME - make use of handle_httperror(self, exception) where applicable
         #   https://docs.ansible.com/ansible/latest/network/dev_guide/developing_plugins_network.html#developing-plugins-httpapi
 
@@ -73,8 +71,14 @@ class DeepSecurityRequest(object):
 
         return response
 
-    def get(self, url, **kwargs):
-        return self._httpapi_error_handle("GET", url, **kwargs)
+    def get(self, url):
+
+        #return self._httpapi_error_handle("GET", url, **kwargs)
+        code, response = self.connection.send_request(
+            'GET', url, data={}, headers=self.headers
+        )
+
+        return response
 
     def put(self, url, **kwargs):
         return self._httpapi_error_handle("PUT", url, **kwargs)
@@ -93,17 +97,17 @@ class DeepSecurityRequest(object):
         Get the valid fields that should be passed to the REST API as urlencoded
         data so long as the argument specification to the module follows the
         convention:
-            - the key to the argspec item does not start with qradar_
+            - the key to the argspec item does not start with deepsecurity_
             - the key does not exist in the not_data_keys list
         """
         try:
-            qradar_data = {}
+            deepsecurity_data = {}
             for param in self.module.params:
                 if (self.module.params[param]) is not None and (
                     param not in self.not_rest_data_keys
                 ):
-                    qradar_data[param] = self.module.params[param]
-            return qradar_data
+                    deepsecurity_data[param] = self.module.params[param]
+            return deepsecurity_data
 
         except TypeError as e:
             self.module.fail_json(msg="invalid data type provided: {0}".format(e))
@@ -131,14 +135,14 @@ class DeepSecurityRequest(object):
         if data is None:
             data = json.dumps(self.get_data())
         elif data is False:
-            # Because for some reason some QRadar REST API endpoint use the
+            # Because for some reason some deepsecurity REST API endpoint use the
             # query string to modify state
             return self.post("/{0}".format(rest_path))
         return self.post("/{0}".format(rest_path), data=data)
 
     def create_update(self, rest_path, data=None):
         """
-        Create or Update a file/directory monitor data input in qradar
+        Create or Update a file/directory monitor data input in deepsecurity
         """
         if data is None:
             data = json.dumps(self.get_data())
