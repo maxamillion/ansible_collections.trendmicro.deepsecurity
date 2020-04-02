@@ -16,17 +16,17 @@ ANSIBLE_METADATA = {
 }
 DOCUMENTATION = """
 ---
-module: hosts_info
-short_description: Obtain information about one or many Hosts defined by TrendMicro Deep Security
+module: smart_folers_info
+short_description: Obtain information about Smart Folders defined by TrendMicro Deep Security
 description:
-  - This module obtains information about Hosts defined by TrendMicro Deep Security
+  - This module obtains information about Smart Folders defined by TrendMicro Deep Security
 version_added: "2.9"
 options:
   id:
     description:
-      - Obtain only information of the Rule with provided ID
+      - Obtain only information of the Smart Folder with provided ID
     required: false
-    type: int
+    type: str
 
 author: Ansible Security Automation Team (@maxamillion) <https://github.com/ansible-security>"
 """
@@ -62,14 +62,14 @@ def main():
     deepsec_request = DeepSecurityRequest(module)
 
     if module.params['id']:
-        hosts = deepsec_request.get('/rest/hosts/{0}'.format(module.params['id']))
+        smart_folders = deepsec_request.get('/rest/smart-folders/{0}'.format(module.params['id']))
     else:
-        hosts = deepsec_request.get('/rest/hosts')
+        smart_folders = deepsec_request.get('/rest/smart-folders')
 
-    if 'hosts' in hosts:
-        module.exit_json(hosts=hosts['hosts']['hosts'], changed=False)
+    if 'ListSmartFoldersResponse' in smart_folders:
+        module.exit_json(smart_folders=smart_folders['ListSmartFoldersResponse']['smartFolders'], changed=False)
     else:
-        module.fail_json(msg="Unable to retrieve Hosts info.")
+        module.fail_json(msg="Unable to retrieve Smart Folders info.")
 
 
 if __name__ == "__main__":
