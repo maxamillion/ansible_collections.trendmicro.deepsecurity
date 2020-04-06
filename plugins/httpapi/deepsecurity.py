@@ -51,6 +51,7 @@ class HttpApi(HttpApiBase):
             # Some Trend Micro API Endpoints require the sID in the query string
             # instead of honoring the session Cookie
             if query_string_auth:
+                self.connection._connect()
                 url = "{0}?{1}".format(url, 'sID={0}'.format(self._auth_token))
 
             response, response_data = self.connection.send(
