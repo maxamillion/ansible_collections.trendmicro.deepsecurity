@@ -16,17 +16,17 @@ ANSIBLE_METADATA = {
 }
 DOCUMENTATION = """
 ---
-module: scan_configs_info
-short_description: Obtain information about AntiMalware Scan Configs in TrendMicro Deep Security
+module: hosts_info
+short_description: Obtain information about Rule Sets defined by TrendMicro Deep Security
 description:
-  - Obtain information about AntiMalware Scan Configs in TrendMicro Deep Security
+  - Obtain information about Rule Sets defined by TrendMicro Deep Security
 version_added: "2.9"
 options:
   id:
     description:
       - FIXME FIXME FIXME
     required: false
-    type: str
+    type: int
 
 author: Ansible Security Automation Team (@maxamillion) <https://github.com/ansible-security>"
 """
@@ -61,9 +61,9 @@ def main():
 
     deepsec_request = DeepSecurityRequest(module)
 
-    scan_configs = deepsec_request.get('/rest/policies/antimalware/scanConfigs', query_string_auth=True)
+    rulesets = deepsec_request.get('/rest/rulesets')
 
-    module.exit_json(scan_configs=scan_configs, changed=False)
+    module.exit_json(rulesets=rulesets, changed=False)
 
 
 if __name__ == "__main__":

@@ -32,7 +32,7 @@ BASE_HEADERS = {
 
 
 class HttpApi(HttpApiBase):
-    def send_request(self, request_method, url, params=None, data=None, headers=None):
+    def send_request(self, request_method, url, params=None, data=None, headers=None, query_string_auth=False):
         params = params if params else {}
         headers = headers if headers else BASE_HEADERS
         data = data if data else {}
@@ -47,7 +47,12 @@ class HttpApi(HttpApiBase):
 
         try:
             self._display_request(request_method)
-            import q; q.q(headers)
+
+            # Some Trend Micro API Endpoints require the sID in the query string
+            # instead of honoring the session Cookie
+            if query_string_auth:
+                url = "{0}?{1}".format(url, 'sID={0}'.format(self._auth_token))
+
             response, response_data = self.connection.send(
                 url, data, method=request_method, headers=headers
             )
@@ -89,6 +94,11 @@ class HttpApi(HttpApiBase):
             # you will have to keep track of it another way and make sure that it is sent
             # with the rest of the request from send_request()
             self.connection._auth = {'Cookie': 'sID={0}'.format(auth_token)}
+
+            # Have to carry this around because variuous Trend Micro Deepsecurity REST
+            # API endpoints want the sID as a querystring parameter instead of honoring
+            # the session Cookie
+            self._auth_token = auth_token
         except KeyError:
             raise AnsibleAuthenticationFailure(message="Failed to acquire login token.")
 
@@ -101,3 +111,4 @@ class HttpApi(HttpApiBase):
 
             # Clean up tokens
             self.connection._auth = None
+            self._auth_token = None

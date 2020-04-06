@@ -39,8 +39,6 @@ def find_dict_in_list(some_list, key, value):
 
 
 class DeepSecurityRequest(object):
-    import q;
-    @q.t
     def __init__(self, module, headers=None, not_rest_data_keys=None):
 
         self.module = module
@@ -56,16 +54,13 @@ class DeepSecurityRequest(object):
         self.headers = headers if headers else BASE_HEADERS
 
 
-    import q;
-    @q.t
-    def _httpapi_error_handle(self, method, uri, data={}):
+    def _httpapi_error_handle(self, method, uri, data={}, query_string_auth=False):
         # FIXME - make use of handle_httperror(self, exception) where applicable
         #   https://docs.ansible.com/ansible/latest/network/dev_guide/developing_plugins_network.html#developing-plugins-httpapi
 
         try:
-            import q; q.q(self.headers)
             code, response = self.connection.send_request(
-                method, uri, data=data, headers=self.headers
+                method, uri, data=data, headers=self.headers, query_string_auth=query_string_auth
             )
         except ConnectionError as e:
             self.module.fail_json(msg="connection error occurred: {0}".format(e))
