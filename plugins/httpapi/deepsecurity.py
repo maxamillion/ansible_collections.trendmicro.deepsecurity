@@ -38,6 +38,12 @@ class HttpApi(HttpApiBase):
         data = data if data else {}
 
 
+        # Some Trend Micro API Endpoints require the sID in the query string
+        # instead of honoring the session Cookie
+        if query_string_auth:
+            self.connection._connect()
+            params['sID'] = self._auth_token
+
         if params:
             params_with_val = {}
             for param in params:
@@ -47,12 +53,6 @@ class HttpApi(HttpApiBase):
 
         try:
             self._display_request(request_method)
-
-            # Some Trend Micro API Endpoints require the sID in the query string
-            # instead of honoring the session Cookie
-            if query_string_auth:
-                self.connection._connect()
-                url = "{0}?{1}".format(url, 'sID={0}'.format(self._auth_token))
 
             response, response_data = self.connection.send(
                 url, data, method=request_method, headers=headers

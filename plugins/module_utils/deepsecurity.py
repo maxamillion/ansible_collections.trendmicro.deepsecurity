@@ -37,20 +37,6 @@ def find_dict_in_list(some_list, key, value):
                     return some_dict, some_list.index(some_dict)
     return None
 
-def translate_syslog_dict_keys(key):
-    camel_case_to_snake_case = {
-        'certificateChain': 'certificate_chain',
-        'eventFormat': 'event_format',
-        'privateKey': 'private_key',
-        'iD': 'id',
-
-    }
-
-    if key in camel_case_to_snake_case:
-        return camel_case_to_snake_case['key']
-
-    return key
-
 
 class DeepSecurityRequest(object):
     def __init__(self, module, headers=None, not_rest_data_keys=None):
@@ -68,14 +54,13 @@ class DeepSecurityRequest(object):
         self.headers = headers if headers else BASE_HEADERS
 
 
-    def _httpapi_error_handle(self, method, uri, data={}, query_string_auth=False):
+    def _httpapi_error_handle(self, method, uri, **kwargs ):
         # FIXME - make use of handle_httperror(self, exception) where applicable
         #   https://docs.ansible.com/ansible/latest/network/dev_guide/developing_plugins_network.html#developing-plugins-httpapi
 
         try:
-            code, response = self.connection.send_request(
-                method, uri, data=data, headers=self.headers, query_string_auth=query_string_auth
-            )
+            code, response = self.connection.send_request(method, uri, **kwargs)
+
         except ConnectionError as e:
             self.module.fail_json(msg="connection error occurred: {0}".format(e))
         except CertificateError as e:

@@ -122,6 +122,9 @@ options:
       - 'tls'
     default: 'udp'
 
+notes:
+  - Must provide one of either: C(name) or C(id)
+
 author: Ansible Security Automation Team (@maxamillion) <https://github.com/ansible-security>"
 """
 
@@ -137,12 +140,38 @@ from ansible.module_utils.basic import AnsibleModule
 from ansible.module_utils._text import to_text
 
 from ansible.module_utils.urls import Request
-from ansible.module_utils.six.moves.urllib.parse import quote
+from ansible.module_utils.six.moves.urllib.parse import quote, urlencode
 from ansible.module_utils.six.moves.urllib.error import HTTPError
 from ansible_collections.trendmicro.deepsecurity.plugins.module_utils.deepsecurity import DeepSecurityRequest
 
 import copy
 import json
+
+import q;
+@q.t
+def translate_syslog_dict_keys(key_to_translate, to_camel_case=False, to_snake_case=False):
+    camel_case_to_snake_case = {
+        'certificateChain': 'certificate_chain',
+        'eventFormat': 'event_format',
+        'privateKey': 'private_key',
+        'ID': 'id',
+    }
+
+    snake_case_to_camel_case = {}
+
+    if to_snake_case:
+        for key in camel_case_to_snake_case:
+            snake_case_to_camel_case[camel_case_to_snake_case[key]] = key
+
+        import q; q.q( "SNAKE_CASE_TO_CAMEL_CASE: %s" % snake_case_to_camel_case )
+        if key_to_translate in snake_case_to_camel_case:
+            return snake_case_to_camel_case[key]
+
+    if to_camel_case:
+        if key_to_translate in camel_case_to_snake_case:
+            return camel_case_to_snake_case[key_to_translate]
+
+    return key_to_translate
 
 
 def main():
@@ -171,40 +200,63 @@ def main():
 
     )
 
-    module = AnsibleModule(argument_spec=argspec, supports_check_mode=True)
+    module = AnsibleModule(
+        argument_spec=argspec,
+        supports_check_mode=True,
+        required_one_of=[
+            ['name', 'id'],
+        ]
+    )
 
     deepsec_request = DeepSecurityRequest(module)
 
-    syslog_module_config = {
-        "certificateChain": module.params['certificate_chain'],
-        "description": module.params['description'],
-        "direct": module.params['direct'],
-        "eventFormat": module.params['event_format'],
-        "facility": module.params['facility'],
-        "iD": module.params['id'],
-        "name": module.params['name'],
-        "port": module.params['port'],
-        "privateKey": module.params['private_key'],
-        "server": module.params['server'],
-        "transport": module.params['transport']
-    }
+    syslog_module_config = {}
+    for param in module.params:
+        import q; q.q("PARAM: %s" % param)
 
+        if module.params[param]:
+            import q; q.q( "TRANSLATE_SYSLOG_DICT_KEYS_SNAKE: %s" % translate_syslog_dict_keys(param, to_snake_case=True) )
+            import q; q.q("MODULE.PARAMS[PARAM]: %s" % module.params[param])
+            syslog_module_config[translate_syslog_dict_keys(param, to_snake_case=True)] = module.params[param]
+    import q; q.q(syslog_module_config)
+
+    syslog_config_found = {}
 
     if module.params['id']:
-        syslog_config_found = deepsec_request.get(
-            '/rest/syslog-configurations?syslogConfigurationID={}'.format(module.params['id']),
+
+        syslog_config_query = deepsec_request.get(
+            '/rest/syslog-configurations',
+            params={'syslogConfigurationID': module.params['id']},
             query_string_auth=True
         )
+        if 'ListSyslogConfigurationsResponse' in syslog_config_query:
+            syslog_config_found = syslog_config_query['ListSyslogConfigurationsResponse']['syslogConfigurations'][0]
     else:
         syslog_configs = deepsec_request.get('/rest/syslog-configurations', query_string_auth=True)
-        for syslog_config in syslog_configs:
-            if syslog_config['name'] == module.params['name']:
-                syslog_config_found = syslog_config
+        if 'ListSyslogConfigurationsResponse' in syslog_configs:
+            for syslog_config in syslog_configs['ListSyslogConfigurationsResponse']['syslogConfigurations']:
+                if syslog_config['name'] == module.params['name']:
+                    syslog_config_found = syslog_config
+                    break
 
-        # FIXME - compare key/vals to determind Change
+    changed = False
+    for key in syslog_module_config:
+        if (
+            key in syslog_config_found and
+            syslog_module_config[key] != syslog_config_found[key]
+        ):
+            if module.check_mode:
+                module.exit_json(syslog_config={}, msg="Check Mode Run", changed=True)
+            else:
+                syslog_config_modified = deepsec_request.post(
+                    '/rest/syslog-configurations?{}'.format(urlencode(syslog_module_config)),
+                    query_string_auth=True
+                )
+
+            module.exit_json(syslog_config=syslog_config_modified, changed=True)
 
 
-    module.exit_json(syslog_config=syslog_config, changed=False)
+    module.exit_json(syslog_config=syslog_config_found, changed=False)
 
 
 if __name__ == "__main__":
