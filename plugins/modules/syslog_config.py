@@ -51,7 +51,7 @@ options:
       - The "direct delivery from agent to syslog server" flag.
     required: false
     type: bool
-  eventFormat
+  event_format:
     description:
       - The event format to use when sending syslog messages.
     type: str
@@ -98,7 +98,7 @@ options:
     type: int
     required: no
     default: 514
-  privateKey:
+  private_key:
     description:
       - The private key the Deep Security Manager will use when it contacts the syslog server over TLS.
       - The private key must be an RSA key in PEM-encoded PKCS#1 or PKCS#8 format.
@@ -149,17 +149,62 @@ def main():
 
     # FIXME - MAKE THE ARGSPEC MATCH DOCS
     argspec = dict(
+        name=dict(required=False, type="str"),
         id=dict(required=False, type="int"),
+        certificate_chain=dict(required=False, type="str"),
+        description=dict(required=False, type="str"),
+        direct=dict(required=False, type="bool"),
+        event_format=dict(required=False, type="str",
+                          choices=['standard', 'cef', 'leef'], default='standard'),
+        facility=dict(required=False, type="str",
+                    choices=[
+                        'kernel', 'user', 'mail', 'daemon', 'authorization', 'syslog',
+                        'printer', 'news', 'uucp', 'clock', 'authpriv', 'ftp', 'ntp',
+                        'log-audit', 'log-alert', 'cron', 'local0', 'local1', 'local2',
+                        'local3', 'local4', 'local5', 'local6', 'local7'
+                    ], default='syslog'),
+        port=dict(required=False, type="int", default=514),
+        private_key=dict(required=False, type="str", no_log=True),
+        server=dict(required=False, type="str"),
+        transport=dict(required=False, type="str",
+                          choices=['udp', 'tcp', 'tls'], default='udp'),
+
     )
 
     module = AnsibleModule(argument_spec=argspec, supports_check_mode=True)
 
     deepsec_request = DeepSecurityRequest(module)
 
-    syslog_configs = deepsec_request.get('/rest/syslog-configurations')
+    syslog_module_config = {
+        "certificateChain": module.params['certificate_chain'],
+        "description": module.params['description'],
+        "direct": module.params['direct'],
+        "eventFormat": module.params['event_format'],
+        "facility": module.params['facility'],
+        "iD": module.params['id'],
+        "name": module.params['name'],
+        "port": module.params['port'],
+        "privateKey": module.params['private_key'],
+        "server": module.params['server'],
+        "transport": module.params['transport']
+    }
 
 
-    module.exit_json(syslog_config=syslog_configs, changed=False)
+    if module.params['id']:
+        syslog_config_found = deepsec_request.get(
+            '/rest/syslog-configurations?syslogConfigurationID={}'.format(module.params['id']),
+            query_string_auth=True
+        )
+    else:
+        syslog_configs = deepsec_request.get('/rest/syslog-configurations', query_string_auth=True)
+        for syslog_config in syslog_configs:
+            if syslog_config['name'] == module.params['name']:
+                syslog_config_found = syslog_config
+
+        # FIXME - compare key/vals to determind Change
+
+
+    module.exit_json(syslog_config=syslog_config, changed=False)
 
 
 if __name__ == "__main__":
