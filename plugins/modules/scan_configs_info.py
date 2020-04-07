@@ -34,6 +34,48 @@ author: Ansible Security Automation Team (@maxamillion) <https://github.com/ansi
 
 # FIXME - provide correct example here
 RETURN = """
+    "scan_configs": [
+        {
+            "alert": true,
+            "antiMalwareId": 1,
+            "configurationType": 1,
+            "correlativeScan": false,
+            "description": "",
+            "documentRecovery": false,
+            "enableBehaviorMonitoringDetection": false,
+            "excludedScanProcessFileListID": 1,
+            "filesToScan": 1,
+            "foldersToScan": 1,
+            "heuristicDetectionEnabled": true,
+            "heuristicDetectionOption": 0,
+            "intelliTrapEnabled": true,
+            "maximumScanLayers": 2,
+            "name": "Default Real-Time Scan Configuration",
+            "realtimeMemoryScan": false,
+            "remediationActionsOption": 0,
+            "scanAction": 1,
+            "scanActionForCVE": 3,
+            "scanActionForHeuristicDetection": 1,
+            "scanActionForOtherThreats": 4,
+            "scanActionForPacker": 3,
+            "scanActionForSpyware": 3,
+            "scanActionForTrendX": 3,
+            "scanActionForTrojans": 3,
+            "scanActionForVirus": 4,
+            "scanCompressed": true,
+            "scanCompressedNumberOfFiles": 10,
+            "scanCompressedSmaller": 2,
+            "scanCustomActionForGeneric": 0,
+            "scanFilesActivity": 3,
+            "scanNetworkFolder": false,
+            "scanOLE": true,
+            "scanOLEExploit": true,
+            "scanOLELayer": 3,
+            "spywareEnabled": true,
+            "trendxScanEnabled": false,
+            "unScannableFileAction": 1
+        }
+    ]
 """
 
 EXAMPLES = """
@@ -63,7 +105,13 @@ def main():
 
     scan_configs = deepsec_request.get('/rest/policies/antimalware/scanConfigs', query_string_auth=True)
 
-    module.exit_json(scan_configs=scan_configs, changed=False)
+    if 'antiMalwareScanConfigListing' in scan_configs:
+        module.exit_json(
+            scan_configs=scan_configs['antiMalwareScanConfigListing']['scanConfigs'],
+            changed=False
+        )
+    else:
+        module.fail_json(msg="Unable to retrieve Scan Config info.")
 
 
 if __name__ == "__main__":

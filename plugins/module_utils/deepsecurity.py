@@ -37,6 +37,20 @@ def find_dict_in_list(some_list, key, value):
                     return some_dict, some_list.index(some_dict)
     return None
 
+def translate_syslog_dict_keys(key):
+    camel_case_to_snake_case = {
+        'certificateChain': 'certificate_chain',
+        'eventFormat': 'event_format',
+        'privateKey': 'private_key',
+        'iD': 'id',
+
+    }
+
+    if key in camel_case_to_snake_case:
+        return camel_case_to_snake_case['key']
+
+    return key
+
 
 class DeepSecurityRequest(object):
     def __init__(self, module, headers=None, not_rest_data_keys=None):
