@@ -178,11 +178,21 @@ def sync_configs(trendmicro_config, module_config):
         if key in trendmicro_config:
             trendmicro_config[key] = module_config[key]
 
-    # For some reason the Trend Micro REST API for syslog returns the key
+    # Trend Micro REST API for syslog returns the key
     # of ID from a GET but wants a key of iD on a POST
     if 'ID' in trendmicro_config:
         trendmicro_config['iD'] = trendmicro_config['ID']
         del trendmicro_config['ID']
+    # Trend Micro REST API for syslog returns the key
+    # of name from a GET but wants a key of Name on a POST
+    if 'name' in trendmicro_config:
+        trendmicro_config['Name'] = trendmicro_config['name']
+        del trendmicro_config['name']
+    # Trend Micro REST API for syslog returns the key
+    # of name from a GET but wants a key of Name on a POST
+    if 'description' in trendmicro_config:
+        trendmicro_config['Description'] = trendmicro_config['description']
+        del trendmicro_config['description']
     return trendmicro_config
 
 
@@ -250,8 +260,6 @@ def main():
                 translate_syslog_dict_keys(param, to_snake_case=True)
             ] = module.params[param]
 
-    import q; q.q(syslog_module_config)
-
     for key in syslog_module_config:
         if (
             key in syslog_config_found and
@@ -261,6 +269,7 @@ def main():
                 module.exit_json(syslog_config={}, msg="Check Mode Run", changed=True)
             else:
                 syslog_config_synced = sync_configs(syslog_config_found, syslog_module_config)
+                import q; q.q(syslog_config_synced)
                 syslog_config_modified = deepsec_request.post(
                     '/rest/syslog-configurations',
                     data=syslog_config_synced,
