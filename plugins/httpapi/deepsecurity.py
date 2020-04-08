@@ -55,7 +55,7 @@ class HttpApi(HttpApiBase):
             self._display_request(request_method)
 
             response, response_data = self.connection.send(
-                url, data, method=request_method, headers=headers
+                url, to_bytes(json.dumps(data)), method=request_method, headers=headers
             )
             value = self._get_response_value(response_data)
         except HTTPError as e:
@@ -88,7 +88,7 @@ class HttpApi(HttpApiBase):
             }
         }
 
-        code, auth_token = self.send_request('POST', login_path, data=to_bytes(json.dumps(data)))
+        code, auth_token = self.send_request('POST', login_path, data=data)
         try:
             # This is still sent as an HTTP header, so we can set our connection's _auth
             # variable manually. If the token is returned to the device in another way,

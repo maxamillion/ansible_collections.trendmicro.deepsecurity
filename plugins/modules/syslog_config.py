@@ -147,9 +147,10 @@ from ansible_collections.trendmicro.deepsecurity.plugins.module_utils.deepsecuri
 import copy
 import json
 
-import q;
-@q.t
 def translate_syslog_dict_keys(key_to_translate, to_camel_case=False, to_snake_case=False):
+    """
+    It is not idiomatic Ansible to use snake case so we do bookkeeping here for that
+    """
     camel_case_to_snake_case = {
         'certificateChain': 'certificate_chain',
         'eventFormat': 'event_format',
@@ -157,21 +158,32 @@ def translate_syslog_dict_keys(key_to_translate, to_camel_case=False, to_snake_c
         'ID': 'id',
     }
 
-    snake_case_to_camel_case = {}
-
-    if to_snake_case:
-        for key in camel_case_to_snake_case:
-            snake_case_to_camel_case[camel_case_to_snake_case[key]] = key
-
-        import q; q.q( "SNAKE_CASE_TO_CAMEL_CASE: %s" % snake_case_to_camel_case )
-        if key_to_translate in snake_case_to_camel_case:
-            return snake_case_to_camel_case[key]
-
     if to_camel_case:
         if key_to_translate in camel_case_to_snake_case:
             return camel_case_to_snake_case[key_to_translate]
+    if to_snake_case:
+        snake_case_to_camel_case = {}
+
+        for key in camel_case_to_snake_case:
+            snake_case_to_camel_case[camel_case_to_snake_case[key]] = key
+
+        if key_to_translate in snake_case_to_camel_case:
+            return snake_case_to_camel_case[key_to_translate]
 
     return key_to_translate
+
+
+def sync_configs(trendmicro_config, module_config):
+    for key in module_config:
+        if key in trendmicro_config:
+            trendmicro_config[key] = module_config[key]
+
+    # For some reason the Trend Micro REST API for syslog returns the key
+    # of ID from a GET but wants a key of iD on a POST
+    if 'ID' in trendmicro_config:
+        trendmicro_config['iD'] = trendmicro_config['ID']
+        del trendmicro_config['ID']
+    return trendmicro_config
 
 
 def main():
@@ -210,36 +222,36 @@ def main():
 
     deepsec_request = DeepSecurityRequest(module)
 
-    syslog_module_config = {}
-    for param in module.params:
-        import q; q.q("PARAM: %s" % param)
-
-        if module.params[param]:
-            import q; q.q( "TRANSLATE_SYSLOG_DICT_KEYS_SNAKE: %s" % translate_syslog_dict_keys(param, to_snake_case=True) )
-            import q; q.q("MODULE.PARAMS[PARAM]: %s" % module.params[param])
-            syslog_module_config[translate_syslog_dict_keys(param, to_snake_case=True)] = module.params[param]
-    import q; q.q(syslog_module_config)
-
     syslog_config_found = {}
 
+    # Query System to get current state of config
     if module.params['id']:
-
         syslog_config_query = deepsec_request.get(
             '/rest/syslog-configurations',
             params={'syslogConfigurationID': module.params['id']},
-            query_string_auth=True
         )
         if 'ListSyslogConfigurationsResponse' in syslog_config_query:
             syslog_config_found = syslog_config_query['ListSyslogConfigurationsResponse']['syslogConfigurations'][0]
     else:
-        syslog_configs = deepsec_request.get('/rest/syslog-configurations', query_string_auth=True)
+        syslog_configs = deepsec_request.get('/rest/syslog-configurations')
         if 'ListSyslogConfigurationsResponse' in syslog_configs:
             for syslog_config in syslog_configs['ListSyslogConfigurationsResponse']['syslogConfigurations']:
                 if syslog_config['name'] == module.params['name']:
                     syslog_config_found = syslog_config
                     break
 
+
+    # Run transaction against Trend Micro Deep Security
     changed = False
+    syslog_module_config = {}
+    for param in module.params:
+        if module.params[param]:
+            syslog_module_config[
+                translate_syslog_dict_keys(param, to_snake_case=True)
+            ] = module.params[param]
+
+    import q; q.q(syslog_module_config)
+
     for key in syslog_module_config:
         if (
             key in syslog_config_found and
@@ -248,13 +260,12 @@ def main():
             if module.check_mode:
                 module.exit_json(syslog_config={}, msg="Check Mode Run", changed=True)
             else:
+                syslog_config_synced = sync_configs(syslog_config_found, syslog_module_config)
                 syslog_config_modified = deepsec_request.post(
-                    '/rest/syslog-configurations?{}'.format(urlencode(syslog_module_config)),
-                    query_string_auth=True
+                    '/rest/syslog-configurations',
+                    data=syslog_config_synced,
                 )
-
             module.exit_json(syslog_config=syslog_config_modified, changed=True)
-
 
     module.exit_json(syslog_config=syslog_config_found, changed=False)
 
