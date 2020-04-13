@@ -173,6 +173,8 @@ def translate_syslog_dict_keys(key_to_translate, to_camel_case=False, to_snake_c
     return key_to_translate
 
 
+import q;
+@q.t
 def sync_configs(trendmicro_config, module_config):
     for key in module_config:
         if key in trendmicro_config:
@@ -180,25 +182,31 @@ def sync_configs(trendmicro_config, module_config):
 
     # Trend Micro REST API for syslog returns the key
     # of ID from a GET but wants a key of iD on a POST
+    # FIXME FIXME FIXME - I don't know what this wants, the docs are wrong nothing seemd to work
     if 'ID' in trendmicro_config:
         trendmicro_config['iD'] = trendmicro_config['ID']
         del trendmicro_config['ID']
+
     # Trend Micro REST API for syslog returns the key
-    # of name from a GET but wants a key of Name on a POST
-    if 'name' in trendmicro_config:
-        trendmicro_config['Name'] = trendmicro_config['name']
-        del trendmicro_config['name']
-    # Trend Micro REST API for syslog returns the key
-    # of name from a GET but wants a key of Name on a POST
-    if 'description' in trendmicro_config:
-        trendmicro_config['Description'] = trendmicro_config['description']
-        del trendmicro_config['description']
+    # of ID from a GET but wants a key of iD on a POST
+    for snake_key in ['certificateChain', 'eventFormat', 'privateKey']:
+        if snake_key in trendmicro_config:
+            snake_key_capitalized = snake_key[0].capitalize() + snake_key[1:]
+            trendmicro_config[snake_key_capitalized] = trendmicro_config[snake_key]
+            del trendmicro_config[snake_key]
+
+    # Trend Micro REST API for syslog returns certain keys in lower case
+    # from a GET but wants a capitalized key of on a POST
+    for key in ['description', 'direct', 'facility', 'name', 'server', 'transport', 'port']:
+        if key in trendmicro_config:
+            trendmicro_config[key.capitalize()] = trendmicro_config[key]
+            del trendmicro_config[key]
+
     return trendmicro_config
 
 
 def main():
 
-    # FIXME - MAKE THE ARGSPEC MATCH DOCS
     argspec = dict(
         name=dict(required=False, type="str"),
         id=dict(required=False, type="int"),
@@ -219,7 +227,6 @@ def main():
         server=dict(required=False, type="str"),
         transport=dict(required=False, type="str",
                           choices=['udp', 'tcp', 'tls'], default='udp'),
-
     )
 
     module = AnsibleModule(
