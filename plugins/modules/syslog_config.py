@@ -180,27 +180,27 @@ def sync_configs(trendmicro_config, module_config):
         if key in trendmicro_config:
             trendmicro_config[key] = module_config[key]
 
-    # Trend Micro REST API for syslog returns the key
-    # of ID from a GET but wants a key of iD on a POST
+    ## Trend Micro REST API for syslog returns the key
+    ## of ID from a GET but wants a key of iD on a POST
     # FIXME FIXME FIXME - I don't know what this wants, the docs are wrong nothing seemd to work
-    if 'ID' in trendmicro_config:
-        trendmicro_config['iD'] = trendmicro_config['ID']
-        del trendmicro_config['ID']
+    #if 'ID' in trendmicro_config:
+    #    trendmicro_config['iD'] = trendmicro_config['ID']
+    #    del trendmicro_config['ID']
 
-    # Trend Micro REST API for syslog returns the key
-    # of ID from a GET but wants a key of iD on a POST
-    for snake_key in ['certificateChain', 'eventFormat', 'privateKey']:
-        if snake_key in trendmicro_config:
-            snake_key_capitalized = snake_key[0].capitalize() + snake_key[1:]
-            trendmicro_config[snake_key_capitalized] = trendmicro_config[snake_key]
-            del trendmicro_config[snake_key]
+    ## Trend Micro REST API for syslog returns the key
+    ## of ID from a GET but wants a key of iD on a POST
+    #for snake_key in ['certificateChain', 'eventFormat', 'privateKey']:
+    #    if snake_key in trendmicro_config:
+    #        snake_key_capitalized = snake_key[0].capitalize() + snake_key[1:]
+    #        trendmicro_config[snake_key_capitalized] = trendmicro_config[snake_key]
+    #        del trendmicro_config[snake_key]
 
-    # Trend Micro REST API for syslog returns certain keys in lower case
-    # from a GET but wants a capitalized key of on a POST
-    for key in ['description', 'direct', 'facility', 'name', 'server', 'transport', 'port']:
-        if key in trendmicro_config:
-            trendmicro_config[key.capitalize()] = trendmicro_config[key]
-            del trendmicro_config[key]
+    ## Trend Micro REST API for syslog returns certain keys in lower case
+    ## from a GET but wants a capitalized key of on a POST
+    #for key in ['description', 'direct', 'facility', 'name', 'server', 'transport', 'port']:
+    #    if key in trendmicro_config:
+    #        trendmicro_config[key.capitalize()] = trendmicro_config[key]
+    #        del trendmicro_config[key]
 
     return trendmicro_config
 
@@ -279,7 +279,7 @@ def main():
                 import q; q.q(syslog_config_synced)
                 syslog_config_modified = deepsec_request.post(
                     '/rest/syslog-configurations',
-                    data=syslog_config_synced,
+                    data={'SyslogConfiguration': syslog_config_synced},
                 )
             module.exit_json(syslog_config=syslog_config_modified, changed=True)
 
