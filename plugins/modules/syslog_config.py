@@ -279,7 +279,11 @@ def main():
                 import q; q.q(syslog_config_synced)
                 syslog_config_modified = deepsec_request.post(
                     '/rest/syslog-configurations',
-                    data={'SyslogConfiguration': syslog_config_synced},
+                    data={
+                        'CreateSyslogConfigurationRequest': {
+                            'syslogConfiguration': syslog_config_synced
+                        }
+                    },
                 )
             module.exit_json(syslog_config=syslog_config_modified, changed=True)
 
